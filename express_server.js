@@ -13,7 +13,6 @@ const generateRandomString = function(length) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
   return result;
-
 }
 
 const urlDatabase = {
@@ -21,14 +20,13 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
-
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
-
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
@@ -44,11 +42,15 @@ app.post("/urls", (req, res) => {
   let myBody = req.body.longURL;
   let valueAdded = Object.entries(urlDatabase).find(([key, value]) => value === myBody)[0];
   res.redirect(`/urls/${valueAdded}`);
+});
+app.post("/urls/:shortURL/delete", (req, res) => {
+  let shortDel = req.params.shortURL;
+  delete urlDatabase[shortDel];
 
+  res.redirect("/urls");
 });
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
-
   res.redirect(longURL);
 });
 app.get("/urls/:shortURL", (req, res) => {
