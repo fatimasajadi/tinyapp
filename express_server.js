@@ -43,10 +43,22 @@ app.post("/urls", (req, res) => {
   let valueAdded = Object.entries(urlDatabase).find(([key, value]) => value === myBody)[0];
   res.redirect(`/urls/${valueAdded}`);
 });
+app.post("/urls/:shortURL", (req, res) => {
+  let editShort = req.params.shortURL;
+  console.log(req.body.editshort);
+  urlDatabase[editShort] = req.body.editshort;
+  console.log(urlDatabase)
+
+  res.redirect("/urls/");
+});
+app.get("/urls/:shortURL", (req, res) => {
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase.shortURL };
+  res.render("urls_show", templateVars);
+
+});
 app.post("/urls/:shortURL/delete", (req, res) => {
   let shortDel = req.params.shortURL;
   delete urlDatabase[shortDel];
-
   res.redirect("/urls");
 });
 app.get("/u/:shortURL", (req, res) => {
