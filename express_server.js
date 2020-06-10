@@ -7,6 +7,7 @@ app.set("view engine", "ejs");
 var cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
+//HelperFunctions
 const generateRandomString = function(length) {
   let result = '';
   let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -16,7 +17,16 @@ const generateRandomString = function(length) {
   }
   return result;
 }
+const emailAvailable = function(email) {
+  for (let key in users) {
+    if (email === users[key].email) {
+      return false;
+    }
+  }
 
+  return true;
+};
+//DB
 const users = {
   "userRandomID": {
     id: "userRandomID",
@@ -29,12 +39,10 @@ const users = {
     password: "dishwasher-funk"
   }
 };
-
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
-
 
 
 app.get("/", (req, res) => {
@@ -72,13 +80,20 @@ app.post("/logout", (req, res) => {
 });
 app.post("/register", (req, res) => {
   let userId = generateRandomString(6);
-  users[userId] = {
-    id: userId,
-    email: req.body.email,
-    password: req.body.password,
+  if (emailAvailable(req.body.email)) {
+    users[userId] = {
+      id: userId,
+      email: req.body.email,
+      password: req.body.password,
+    }
+    res.cookie('user_id', userId);
+    res.redirect("/urls/");
+  } else if (!req.body.email || !req.body.password) {
+    res.status(404).send("Oh uh, something went wrong");
+  } else if (!emailAvailable(req.body.email)) {
+    console.log(req.body.email)
+    res.status(400).send("This email has already been registerd!");
   }
-  res.cookie('user_id', userId);
-  res.redirect("/urls/");
 
 });
 app.get("/register", (req, res) => {
