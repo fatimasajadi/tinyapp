@@ -9,21 +9,21 @@
                 <a class="nav-item nav-link" href="/urls">My URLs</a>
                 <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
             </div>
-            <div class="float-right">
-                <% if(!user_id){ %>
-                    <form class="form-inline my-2 my-lg-0 pull-right" method="POST" action="/login">
-                        <input class="form-control mr-sm-2" placeholder="Username" name="username">
-                        <button class="btn btn-outline-dark " type="submit">Login</button>
+
+            <% if(!email){%>
+                <div class="btn-group" role="group">
+                    <form method="PUT" action="/login">
+                        <button class="btn btn-outline-dark">Login</button>
                     </form>
-                    <% } else{ %>
-
-                        <form class="form-inline my-2 my-lg-0" method="POST" action="/logout">
-                            <span class="form-inline">Logged In As:&nbsp;<%= users[user_id]["email"] %>&nbsp;User!&nbsp;</span>
-                            <button class="btn btn-outline-dark " type="submit">Logout</button>
-                        </form>
-                        <% } %>
-            </div>
-
+                    <form method="PUT" action="/register">
+                        <button class="btn btn-outline-dark">Register</button>
+                    </form>
+                </div>
+                <%}else{%>
+                    <form>
+                        <button class="btn btn-outline-dark">Logout</button>
+                    </form>
+                    <%}%>
 
         </div>
     </nav>
