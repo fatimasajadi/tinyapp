@@ -4,6 +4,8 @@ const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
+var cookieParser = require('cookie-parser');
+app.use(cookieParser());
 
 const generateRandomString = function(length) {
   let result = '';
@@ -21,6 +23,7 @@ const urlDatabase = {
 };
 
 
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -31,11 +34,12 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase };
+  let templateVars = { urls: urlDatabase, username: req.cookies.username };
   res.render("urls_index", templateVars);
 });
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  let templateVars = { username: req.cookies.username };
+  res.render("urls_new", templateVars);
 });
 app.post("/urls", (req, res) => {
   urlDatabase[generateRandomString(6)] = req.body.longURL;
@@ -43,18 +47,26 @@ app.post("/urls", (req, res) => {
   let valueAdded = Object.entries(urlDatabase).find(([key, value]) => value === myBody)[0];
   res.redirect(`/urls/${valueAdded}`);
 });
+app.post("/login", (req, res) => {
+  res.cookie('username', req.body.username);
+  usernameCookie = { Cookies: req.cookies };
+  console.log(usernameCookie)
+  res.redirect("/urls/");
+});
+app.post("/logout", (req, res) => {
+  res.clearCookie('username');
+  res.redirect("/urls/");
+});
 app.post("/urls/:shortURL", (req, res) => {
   let editShort = req.params.shortURL;
   console.log(req.body.editshort);
   urlDatabase[editShort] = req.body.editshort;
   console.log(urlDatabase)
-
   res.redirect("/urls/");
 });
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase.shortURL };
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase.shortURL, username: req.cookies.username };
   res.render("urls_show", templateVars);
-
 });
 app.post("/urls/:shortURL/delete", (req, res) => {
   let shortDel = req.params.shortURL;

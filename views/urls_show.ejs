@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 
+
 <head>
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
@@ -22,14 +23,14 @@
                 </a>
             </p>
         </div>
-        <div class="card-body">
+        <div style="width: 500px;">
             <form method="POST" action="/urls/<%= shortURL %>">
-                <label for="longURL">Edit:</label>
-                <div class="input-group">
-                    <input class="form-control" type="text" name="editshort">
-                    <span class="input-group-btn">
-                        <button class="btn btn-primary">Submit</button>
-                    </span>
+                <h3 style="color:gray;">Edit:</h3>
+                <div class="input-group ">
+                    <h5 style="color:gray;">New URL:</h5>
+                    <P> &nbsp;</P>
+                    <input class="form-inline" type="text" name="editshort">
+                    <button class="btn btn-primary">Submit</button>
                 </div>
             </form>
         </div>
