@@ -57,6 +57,13 @@ app.post("/logout", (req, res) => {
   res.clearCookie('username');
   res.redirect("/urls/");
 });
+// app.post("/register", (req, res) => {
+
+// });
+app.get("/register", (req, res) => {
+
+  res.render("register");
+});
 app.post("/urls/:shortURL", (req, res) => {
   let editShort = req.params.shortURL;
   console.log(req.body.editshort);
