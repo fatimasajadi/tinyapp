@@ -4,14 +4,13 @@ const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
-// var cookieParser = require('cookie-parser');
 var cookieSession = require('cookie-session')
-  // app.use(cookieParser());
 app.use(cookieSession({
   name: 'session',
   keys: ['f080ac7b-b838-4c5f-a1f4-b0a9fee10130', 'c3fb18be-448b-4f6e-a377-49373e9b7e1a'],
 }))
 const bcrypt = require('bcrypt');
+const { emailAvailable } = require('./helpers');
 
 //HelperFunctions
 const generateRandomString = function(length) {
@@ -23,22 +22,12 @@ const generateRandomString = function(length) {
   }
   return result;
 }
-const emailAvailable = function(email) {
-  for (let key in users) {
-    if (email === users[key].email) {
-      return false;
-    }
-  }
-  return true;
-};
+
 const getMatchingUser = function(email, password) {
   for (let key in users) {
     if (email === users[key].email && bcrypt.compareSync(password, users[key].password)) {
       return users[key];
     }
-    // if (email === users[key].email && password === users[key].password) {
-    //   return users[key];
-    // }
   }
   return false;
 };
@@ -70,10 +59,6 @@ const users = {
     password: bcrypt.hashSync("fat", 10)
   }
 };
-// const urlDatabase = {
-//   "b2xVn2": "http://www.lighthouselabs.ca",
-//   "9sm5xK": "http://www.google.com"
-// };
 const urlDatabase = {
   "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "userRandomID" },
   "9sm5xK": { longURL: "http://www.google.com", userID: "user2RandomID" },
@@ -131,7 +116,7 @@ app.post("/logout", (req, res) => {
 
 app.post("/register", (req, res) => {
   let userId = generateRandomString(6);
-  if (emailAvailable(req.body.email)) {
+  if (emailAvailable(req.body.email, users)) {
     users[userId] = {
       id: userId,
       email: req.body.email,
@@ -141,7 +126,7 @@ app.post("/register", (req, res) => {
     res.redirect("/urls/");
   } else if (!req.body.email || !req.body.password) {
     res.status(404).send("Oh uh, something went wrong");
-  } else if (!emailAvailable(req.body.email)) {
+  } else if (!emailAvailable(req.body.email, users)) {
     console.log(req.body.email)
     res.status(400).send("This email has already been registerd!");
   }
@@ -159,7 +144,7 @@ app.post("/login", (req, res) => {
     req.session.user_id = matchingUser.id;
     res.redirect("/urls/");
     console.log(matchingUser)
-  } else if (!emailAvailable(req.body.email)) {
+  } else if (!emailAvailable(req.body.email, users)) {
 
     res.status(403).send("The password is incorrect!");
 
