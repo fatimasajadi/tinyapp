@@ -23,15 +23,22 @@ const emailAvailable = function(email) {
       return false;
     }
   }
-
   return true;
+};
+const getMatchingUser = function(email, password) {
+  for (let key in users) {
+    if (email === users[key].email && password === users[key].password) {
+      return users[key];
+    }
+  }
+  return false;
 };
 //DB
 const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    password: "purple"
   },
   "user2RandomID": {
     id: "user2RandomID",
@@ -58,12 +65,12 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase, user_id: req.cookies.user_id, users: users, email: req.cookies.email };
+  let templateVars = { urls: urlDatabase, user_id: req.cookies.user_id, users: users, };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  let templateVars = { user_id: req.cookies.user_id, users: users };
+  let templateVars = { user_id: key, users: users };
   res.render("urls_new", templateVars);
 });
 
@@ -75,7 +82,7 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect("/urls/");
 });
 
@@ -87,7 +94,7 @@ app.post("/register", (req, res) => {
       email: req.body.email,
       password: req.body.password,
     }
-    res.cookie('user_id', userId);
+    console.log(users)
     res.redirect("/urls/");
   } else if (!req.body.email || !req.body.password) {
     res.status(404).send("Oh uh, something went wrong");
@@ -98,17 +105,29 @@ app.post("/register", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  res.render("register");
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase.shortURL, user_id: req.cookies.user_id, users: users };
+  res.render("register", templateVars);
 });
 
 app.post("/login", (req, res) => {
-  res.cookie('email', req.body.email);
+  const matchingUser = getMatchingUser(req.body.email, req.body.password);
 
-  res.redirect("/urls/");
+  if (matchingUser) {
+    res.cookie('user_id', matchingUser.id);
+    res.redirect("/urls/");
+    console.log(matchingUser)
+  } else if (!emailAvailable(req.body.email)) {
+
+    res.status(403).send("The password is incorrect!");
+
+  } else {
+    res.status(403).send("The email address not found!");
+  }
 });
 
 app.get("/login", (req, res) => {
-  res.render("login");
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase.shortURL, user_id: req.cookies.user_id, users: users };
+  res.render("login", templateVars);
 });
 
 app.post("/urls/:shortURL", (req, res) => {
@@ -120,7 +139,7 @@ app.post("/urls/:shortURL", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase.shortURL, user_id: req.cookies.user_id, users: users, email: req.cookies.email };
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase.shortURL, user_id: req.cookies.user_id, users: users };
   res.render("urls_show", templateVars);
 });
 
@@ -136,7 +155,7 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase.shortURL, user_id: req.cookies.user_id, users: users, email: req.cookies.email };
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase.shortURL, user_id: req.cookies.user_id, users: users, };
   res.render("urls_show", templateVars);
 });
 

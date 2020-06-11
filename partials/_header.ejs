@@ -10,18 +10,18 @@
                 <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
             </div>
 
-            <% if(!email){%>
+            <% if(!user_id){%>
                 <div class="btn-group" role="group">
-                    <form method="PUT" action="/login">
+                    <form method="GET" action="/login">
                         <button class="btn btn-outline-dark">Login</button>
                     </form>
-                    <form method="PUT" action="/register">
+                    <form method="GET" action="/register">
                         <button class="btn btn-outline-dark">Register</button>
                     </form>
                 </div>
                 <%}else{%>
-                    <form>
-                        <button class="btn btn-outline-dark">Logout</button>
+                    <form method="POST" action="/logout">
+                        <button type="submit" class="btn btn-outline-dark">Logout</button>
                     </form>
                     <%}%>
 
