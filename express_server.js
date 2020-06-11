@@ -33,6 +33,8 @@ const getMatchingUser = function(email, password) {
   }
   return false;
 };
+
+
 //DB
 const users = {
   "userRandomID": {
@@ -70,8 +72,13 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  let templateVars = { user_id: key, users: users };
-  res.render("urls_new", templateVars);
+  if (req.cookies.user_id) {
+    let templateVars = { user_id: req.cookies.user_id, users: users };
+    res.render("urls_new", templateVars);
+  } else {
+    res.redirect("/login")
+  }
+
 });
 
 app.post("/urls", (req, res) => {
@@ -111,7 +118,6 @@ app.get("/register", (req, res) => {
 
 app.post("/login", (req, res) => {
   const matchingUser = getMatchingUser(req.body.email, req.body.password);
-
   if (matchingUser) {
     res.cookie('user_id', matchingUser.id);
     res.redirect("/urls/");
