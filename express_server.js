@@ -6,6 +6,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 var cookieParser = require('cookie-parser');
 app.use(cookieParser());
+const bcrypt = require('bcrypt');
 
 //HelperFunctions
 const generateRandomString = function(length) {
@@ -27,9 +28,12 @@ const emailAvailable = function(email) {
 };
 const getMatchingUser = function(email, password) {
   for (let key in users) {
-    if (email === users[key].email && password === users[key].password) {
+    if (email === users[key].email && bcrypt.compareSync(password, users[key].password)) {
       return users[key];
     }
+    // if (email === users[key].email && password === users[key].password) {
+    //   return users[key];
+    // }
   }
   return false;
 };
@@ -48,17 +52,17 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple"
+    password: bcrypt.hashSync("purple", 10)
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
+    password: bcrypt.hashSync("dishwasher-funk", 10)
   },
   "7272FF": {
     id: "7272FF",
     email: "fat@gmail.com",
-    password: "fat"
+    password: bcrypt.hashSync("fat", 10)
   }
 };
 // const urlDatabase = {
@@ -126,7 +130,7 @@ app.post("/register", (req, res) => {
     users[userId] = {
       id: userId,
       email: req.body.email,
-      password: req.body.password,
+      password: bcrypt.hashSync(password, 10),
     }
     console.log(users)
     res.redirect("/urls/");
