@@ -20,8 +20,9 @@
                     </form>
                 </div>
                 <%}else{%>
-                    <form method="POST" action="/logout">
-                        <button type="submit" class="btn btn-outline-dark">Logout</button>
+                    <form class="form-inline my-2 my-lg-0" method="POST" action="/logout">
+                        <span class="form-inline">Logged In As:&nbsp;<%= users[user_id]["email"] %>&nbsp;User!&nbsp;</span>
+                        <button class="btn btn-outline-dark " type="submit">Logout</button>
                     </form>
                     <%}%>
 
