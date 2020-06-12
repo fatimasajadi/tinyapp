@@ -22,14 +22,18 @@
                     <%= shortURL %>
                 </a>
             </p>
+            <p>
+                Created at:
+                <%= createdAt.toLocaleString() %>
+            </p>
         </div>
-        <div style="width: 500px;">
+        <div style="width: 500px; margin: auto; margin-bottom: 15px;">
             <form method="POST" action="/urls/<%= shortURL %>">
-                <h3 style="color:gray;">Edit:</h3>
-                <div class="input-group ">
+                <h3 style="color:gray;">Edit</h3>
+                <div class="input-group" style="justify-content: center;">
                     <h5 style="color:gray;">New URL:</h5>
                     <P> &nbsp;</P>
-                    <input class="form-inline" type="text" name="editshort">
+                    <input class="form-inline" type="text" name="editshort">&nbsp;
                     <button class="btn btn-primary">Submit</button>
                 </div>
             </form>

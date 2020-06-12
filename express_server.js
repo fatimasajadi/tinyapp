@@ -33,14 +33,16 @@ const getMatchingUser = function(email, password) {
 };
 
 const urlsForUser = function(id) {
+  const obj = {}
   for (let key in urlDatabase) {
     if (urlDatabase[key]["userID"] === id) {
-      return ({
-        [key]: urlDatabase[key].longURL
-      })
+      obj[key] = urlDatabase[key];
     }
   }
+
+  return obj;
 };
+
 //DB
 const users = {
   "userRandomID": {
@@ -60,11 +62,16 @@ const users = {
   }
 };
 const urlDatabase = {
-  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "userRandomID" },
-  "9sm5xK": { longURL: "http://www.google.com", userID: "user2RandomID" },
-  "msnmsn": { longURL: "http://www.msn.com", userID: "7272FF" }
+  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "userRandomID", createdAt: new Date() },
+  "9sm5xK": { longURL: "http://www.google.com", userID: "user2RandomID", createdAt: new Date() },
+  "msnmsn": { longURL: "http://www.msn.com", userID: "7272FF", createdAt: new Date() }
 };
 
+
+const isUserLoggedIn = (req) => {
+  const userId = req.session.user_id;
+  return userId && users[userId];
+}
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -78,23 +85,24 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
-app.get("/urls", (req, res) => {
-  if (req.session.user_id) {
+app.get("/urls", (req, res) => {;
+  if (isUserLoggedIn(req)) {
     const specificUrlDB = urlsForUser(req.session.user_id);
     let templateVars = { urls: specificUrlDB, user_id: req.session.user_id, users: users, };
     res.render("urls_index", templateVars);
   } else {
-    res.redirect("/login")
+    req.session.user_id = null;
+    let templateVars = { user_id: req.session.user_id, users: users };
+    res.status(401).render('unauthorized', templateVars);
   }
-
 });
 
 app.get("/urls/new", (req, res) => {
-  if (req.session.user_id) {
-    let templateVars = { user_id: req.session.user_id, users: users };
+  let templateVars = { user_id: req.session.user_id, users: users };
+  if (isUserLoggedIn(req)) {
     res.render("urls_new", templateVars);
   } else {
-    res.redirect("/login")
+    res.status(401).render('unauthorized', templateVars);
   }
 });
 
@@ -104,8 +112,8 @@ app.post("/urls", (req, res) => {
   urlDatabase[shortURL] = {
     longURL: longURL,
     userID: req.session.user_id,
+    createdAt: new Date(),
   };
-
   res.redirect(`/urls/${shortURL}`);
 });
 
@@ -120,9 +128,9 @@ app.post("/register", (req, res) => {
     users[userId] = {
       id: userId,
       email: req.body.email,
-      password: bcrypt.hashSync(password, 10),
+      password: bcrypt.hashSync(req.body.password, 10),
     }
-    console.log(users)
+    req.session.user_id = userId;
     res.redirect("/urls/");
   } else if (!req.body.email || !req.body.password) {
     res.status(404).send("Oh uh, something went wrong");
@@ -140,7 +148,6 @@ app.get("/register", (req, res) => {
 app.post("/login", (req, res) => {
   const matchingUser = getMatchingUser(req.body.email, req.body.password);
   if (matchingUser) {
-    // res.cookie('user_id', matchingUser.id);
     req.session.user_id = matchingUser.id;
     res.redirect("/urls/");
     console.log(matchingUser)
@@ -174,7 +181,20 @@ app.post("/urls/:shortURL", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
 
-  let templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, user_id: req.session.user_id };
+  if (!isUserLoggedIn(req)) {
+    res.status(401).render('unauthorized', { user_id: null });
+    return;
+  }
+  const specificUrlDB = urlsForUser(req.session.user_id);
+  const dbEntry = specificUrlDB[shortURL];
+  console.log(dbEntry);
+
+  if (!dbEntry) {
+    res.status(404).send('URL not found');
+    return;
+  }
+
+  let templateVars = { createdAt: dbEntry.createdAt, shortURL: shortURL, longURL: dbEntry.longURL, user_id: req.session.user_id, users: users };
   res.render("urls_show", templateVars);
 });
 

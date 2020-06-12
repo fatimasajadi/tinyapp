@@ -10,10 +10,10 @@
                 <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
             </div>
 
-            <% if(!user_id){%>
+            <% if(!user_id || !users[user_id]){%>
                 <div class="btn-group" role="group">
                     <form method="GET" action="/login">
-                        <button class="btn btn-outline-dark">Login</button>
+                        <button class="btn btn-outline-dark">Login</button>&nbsp;
                     </form>
                     <form method="GET" action="/register">
                         <button class="btn btn-outline-dark">Register</button>
