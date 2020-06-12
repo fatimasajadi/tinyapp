@@ -2,17 +2,20 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
+const cookieSession = require('cookie-session');
+const bcrypt = require('bcrypt');
+const { emailAvailable } = require('./helpers');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
-var cookieSession = require('cookie-session')
 app.use(cookieSession({
   name: 'session',
   keys: ['f080ac7b-b838-4c5f-a1f4-b0a9fee10130', 'c3fb18be-448b-4f6e-a377-49373e9b7e1a'],
 }))
-const bcrypt = require('bcrypt');
-const { emailAvailable } = require('./helpers');
+
 
 //HelperFunctions
+//This function generates random alphanumeric string.
+//This function takes the length of the string as an argument
 const generateRandomString = function(length) {
   let result = '';
   let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -21,8 +24,9 @@ const generateRandomString = function(length) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
   return result;
-}
+};
 
+//Takes email and pasword and check if they match!
 const getMatchingUser = function(email, password) {
   for (let key in users) {
     if (email === users[key].email && bcrypt.compareSync(password, users[key].password)) {
@@ -32,16 +36,33 @@ const getMatchingUser = function(email, password) {
   return false;
 };
 
+//Takes an id then chek the data base and returns all the records specific to the id.
 const urlsForUser = function(id) {
-  const obj = {}
+  const obj = {};
   for (let key in urlDatabase) {
     if (urlDatabase[key]["userID"] === id) {
       obj[key] = urlDatabase[key];
     }
   }
-
   return obj;
 };
+
+//Checks if a user is already logged in and returns userID.
+const isUserLoggedIn = (req) => {
+  const userId = req.session.user_id;
+  return userId && users[userId];
+}
+
+//Check to see if a specific short url is on the DB or not!
+const isUrlAvailable = (url, DB) => {
+  for (let key in DB) {
+    if (key === url) {
+      return true;
+    }
+  }
+  return false;
+};
+
 
 //DB
 const users = {
@@ -67,24 +88,12 @@ const urlDatabase = {
   "msnmsn": { longURL: "http://www.msn.com", userID: "7272FF", createdAt: new Date() }
 };
 
-
-const isUserLoggedIn = (req) => {
-  const userId = req.session.user_id;
-  return userId && users[userId];
-}
-
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
+//If the user is alredy logged in, GET the /urls record specific to the user
+//If the user is not logged in, ask the user to login or register first.
 app.get("/urls", (req, res) => {;
   if (isUserLoggedIn(req)) {
     const specificUrlDB = urlsForUser(req.session.user_id);
@@ -93,19 +102,24 @@ app.get("/urls", (req, res) => {;
   } else {
     req.session.user_id = null;
     let templateVars = { user_id: req.session.user_id, users: users };
-    res.status(401).render('unauthorized', templateVars);
+    const errorMsg = "401 Unauthorized Error! Please try login or register!";
+    res.status(401).render('unauthorized', {...templateVars, errorMsg });
   }
 });
 
+//Only logged in users can have access to /urls/new to create new urls.
+//If the user is not logged in, and tried to access the /urls/new, asks the users to login or register first!
 app.get("/urls/new", (req, res) => {
   let templateVars = { user_id: req.session.user_id, users: users };
   if (isUserLoggedIn(req)) {
     res.render("urls_new", templateVars);
   } else {
-    res.status(401).render('unauthorized', templateVars);
+    const errorMsg = "401 Unauthorized Error! Please try login or register!";
+    res.status(401).render('unauthorized', {...templateVars, errorMsg });
   }
 });
 
+//POST new urls to the /urls and assign the random id to the record in DB.
 app.post("/urls", (req, res) => {
   let longURL = req.body.longURL;
   const shortURL = generateRandomString(6);
@@ -117,12 +131,18 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
+//Clears the cookie and redirect the user to the main (/urls) page.
 app.post("/logout", (req, res) => {
   req.session['user_id'] = null;
   res.redirect("/urls/");
 });
 
+//Assigns a random id to the new registered users.
+//Checks if the user is alredy on the DB, if not add it to the record.
+//If the email is alredy on the DB, returns an error, saying that the email already exists.
+//Both email and password are required in order to be registered.
 app.post("/register", (req, res) => {
+  let templateVars = { user_id: req.session.user_id, users: users };
   let userId = generateRandomString(6);
   if (emailAvailable(req.body.email, users)) {
     users[userId] = {
@@ -133,51 +153,66 @@ app.post("/register", (req, res) => {
     req.session.user_id = userId;
     res.redirect("/urls/");
   } else if (!req.body.email || !req.body.password) {
-    res.status(404).send("Oh uh, something went wrong");
+    res.status(404).send("Email and password are required");
   } else if (!emailAvailable(req.body.email, users)) {
-    console.log(req.body.email)
-    res.status(400).send("This email has already been registerd!");
+    const errorMsg = "This email has already been registerd!";
+    res.status(400).render('unauthorized', {...templateVars, errorMsg });
   }
 });
 
+//GET the /register page.
 app.get("/register", (req, res) => {
   let templateVars = { user_id: req.session.user_id, users: users };
   res.render("register", templateVars);
 });
 
+//Checks if the email and password match inorder to login.
+//If email exists but password was incorrect, return "password is incorrect error".
+//If email does not exist, return proper error by saying that the email is not found.
 app.post("/login", (req, res) => {
+  let templateVars = { user_id: req.session.user_id, users: users };
   const matchingUser = getMatchingUser(req.body.email, req.body.password);
   if (matchingUser) {
     req.session.user_id = matchingUser.id;
     res.redirect("/urls/");
-    console.log(matchingUser)
-  } else if (!emailAvailable(req.body.email, users)) {
 
-    res.status(403).send("The password is incorrect!");
+  } else if (!emailAvailable(req.body.email, users)) {
+    const errorMsg = "The password is incorrect!"
+    res.status(403).render('unauthorized', {...templateVars, errorMsg });
 
   } else {
-    res.status(403).send("The email address not found!");
+    const errorMsg = "The email address is not found!";
+    res.status(403).render('unauthorized', {...templateVars, errorMsg });
+
   }
 });
 
+//GET the initial login page.
 app.get("/login", (req, res) => {
   let templateVars = { user_id: req.session.user_id, users: users };
   res.render("login", templateVars);
 });
 
+//Only loggedin users can edit their own urls 
+//If a user wants to edit another's url, return "access denied!"
 app.post("/urls/:shortURL", (req, res) => {
+  let templateVars = { user_id: req.session.user_id, users: users };
   let editShort = req.params.shortURL;
   if (req.session.user_id) {
     const specificUrlDB = urlsForUser(req.session.user_id);
     for (key in specificUrlDB) {
-      if (key === editShort)
+      if (key === editShort) {
         urlDatabase[editShort].longURL = req.body.editshort;
+        res.redirect("/urls/");
+      } else {
+        const errorMsg = "Access denied!";
+        res.status(401).render('unauthorized', {...templateVars, errorMsg });
+      }
     }
-    res.redirect("/urls/");
   }
-
 });
 
+//GET specific url page only if the creator user is logged in.
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
 
@@ -193,27 +228,42 @@ app.get("/urls/:shortURL", (req, res) => {
     res.status(404).send('URL not found');
     return;
   }
-
   let templateVars = { createdAt: dbEntry.createdAt, shortURL: shortURL, longURL: dbEntry.longURL, user_id: req.session.user_id, users: users };
   res.render("urls_show", templateVars);
 });
 
+//Only loggedin users can delete their own urls 
+//If a user wants to delete another's url, return "access denied!"
 app.post("/urls/:shortURL/delete", (req, res) => {
+  let templateVars = { user_id: req.session.user_id, users: users };
   let shortDel = req.params.shortURL;
   if (req.session.user_id) {
     const specificUrlDB = urlsForUser(req.session.user_id);
     for (key in specificUrlDB) {
-      if (key === shortDel)
+      if (key === shortDel) {
         delete urlDatabase[shortDel];
-    }
-    res.redirect("/urls");
-  }
+        res.redirect("/urls")
+      } else {
+        const errorMsg = "Access denied!";
+        res.status(401).render('unauthorized', {...templateVars, errorMsg });
 
+      }
+    }
+  }
 });
 
+//only short urls that are actually recorded on the DB can be accessed through /u/:shortURL.
+//If the url is not recorded, should return proper error by saying that "This website is not on the Database!"
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL].longURL;
-  res.redirect(longURL);
+  let templateVars = { user_id: req.session.user_id, users: users };
+  let shortURL = req.params.shortURL;
+
+  if (isUrlAvailable(shortURL, urlDatabase)) {
+    res.redirect(urlDatabase[shortURL].longURL);
+  } else {
+    const errorMsg = "This website is not on the Database!";
+    res.status(401).render('unauthorized', {...templateVars, errorMsg });
+  }
 });
 
 app.listen(PORT, () => {
