@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8080;
 const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
@@ -10,7 +10,7 @@ app.set("view engine", "ejs");
 app.use(cookieSession({
   name: 'session',
   keys: ['f080ac7b-b838-4c5f-a1f4-b0a9fee10130', 'c3fb18be-448b-4f6e-a377-49373e9b7e1a'],
-}))
+}));
 
 
 //HelperFunctions
@@ -20,7 +20,7 @@ const generateRandomString = function(length) {
   let result = '';
   let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let charactersLength = characters.length;
-  for (var i = 0; i < length; i++) {
+  for (let i = 0; i < length; i++) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
   return result;
@@ -51,7 +51,7 @@ const urlsForUser = function(id) {
 const isUserLoggedIn = (req) => {
   const userId = req.session.user_id;
   return userId && users[userId];
-}
+};
 
 //Check to see if a specific short url is on the DB or not!
 const isUrlAvailable = (url, DB) => {
@@ -62,7 +62,6 @@ const isUrlAvailable = (url, DB) => {
   }
   return false;
 };
-
 
 //DB
 const users = {
@@ -94,7 +93,7 @@ app.get("/urls.json", (req, res) => {
 
 //If the user is alredy logged in, GET the /urls record specific to the user
 //If the user is not logged in, ask the user to login or register first.
-app.get("/urls", (req, res) => {;
+app.get("/urls", (req, res) => {
   if (isUserLoggedIn(req)) {
     const specificUrlDB = urlsForUser(req.session.user_id);
     let templateVars = { urls: specificUrlDB, user_id: req.session.user_id, users: users, };
@@ -149,7 +148,7 @@ app.post("/register", (req, res) => {
       id: userId,
       email: req.body.email,
       password: bcrypt.hashSync(req.body.password, 10),
-    }
+    };
     req.session.user_id = userId;
     res.redirect("/urls/");
   } else if (!req.body.email || !req.body.password) {
@@ -177,7 +176,7 @@ app.post("/login", (req, res) => {
     res.redirect("/urls/");
 
   } else if (!emailAvailable(req.body.email, users)) {
-    const errorMsg = "The password is incorrect!"
+    const errorMsg = "The password is incorrect!";
     res.status(403).render('unauthorized', {...templateVars, errorMsg });
 
   } else {
@@ -200,7 +199,7 @@ app.post("/urls/:shortURL", (req, res) => {
   let editShort = req.params.shortURL;
   if (req.session.user_id) {
     const specificUrlDB = urlsForUser(req.session.user_id);
-    for (key in specificUrlDB) {
+    for (let key in specificUrlDB) {
       if (key === editShort) {
         urlDatabase[editShort].longURL = req.body.editshort;
         res.redirect("/urls/");
@@ -239,10 +238,10 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   let shortDel = req.params.shortURL;
   if (req.session.user_id) {
     const specificUrlDB = urlsForUser(req.session.user_id);
-    for (key in specificUrlDB) {
+    for (let key in specificUrlDB) {
       if (key === shortDel) {
         delete urlDatabase[shortDel];
-        res.redirect("/urls")
+        res.redirect("/urls");
       } else {
         const errorMsg = "Access denied!";
         res.status(401).render('unauthorized', {...templateVars, errorMsg });
